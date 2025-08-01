@@ -129,8 +129,9 @@
     .controls button:nth-child(3) { background: #28a745; }    /* تحويل إلى أسطر */
     .controls button:nth-child(4) { background: #ffc107; color: #000; } /* تبديل نوع الفاصل */
     .controls button:nth-child(5) { background: #17a2b8; }    /* إزالة الفواصل */
-    .controls button:nth-child(6) { background: #6f42c1; }    /* نسخ */
-    .controls button:nth-child(7) { background: #dc3545; }    /* مسح */
+    .controls button:nth-child(6) { background: #6f42c1; }    /* تحويل المسافات */
+    .controls button:nth-child(7) { background: #6f42c1; }    /* نسخ */
+    .controls button:nth-child(8) { background: #dc3545; }    /* مسح */
 
     .controls button:hover {
       opacity: 0.9;
@@ -166,6 +167,7 @@
     <button onclick="convertToLines()">تحويل إلى أسطر</button>
     <button onclick="replaceSeparators()">تبديل نوع الفاصل</button>
     <button onclick="removeAllSeparators()">إزالة الفواصل</button>
+    <button onclick="replaceSpaces()">تحويل المسافات إلى الفاصل المختار</button>
     <button onclick="copyResult()">نسخ النتيجة</button>
     <button onclick="clearAll()">مسح الكل</button>
   </div>
@@ -239,6 +241,14 @@
           .join(" ")
     );
     document.getElementById("output").value = lines.join("\n");
+    scrollToOutput();
+  }
+
+  function replaceSpaces() {
+    const input = document.getElementById("input").value;
+    const separator = getSeparatorValue();
+    const replaced = input.trim().split(/\s+/).join(separator);
+    document.getElementById("output").value = replaced;
     scrollToOutput();
   }
 
