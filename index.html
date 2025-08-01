@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>📋 أداة تنسيق النصوص</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f1f3f6;
+      padding: 20px;
+      direction: rtl;
+      text-align: right;
+      -webkit-tap-highlight-color: rgba(0,0,0,0);
+    }
+
+    h2 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 150px;
+      font-size: 16px;
+      resize: vertical;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .controls {
+      margin: 20px 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      flex-direction: column;
+      max-width: 100%;
+    }
+
+    /* Dropdown العصري */
+    .dropdown {
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      user-select: none;
+    }
+
+    .dropdown-toggle {
+      background-color: #fff;
+      border: 2px solid #007bff;
+      border-radius: 8px;
+      padding: 12px 15px;
+      cursor: pointer;
+      font-size: 16px;
+      text-align: right;
+      position: relative;
+      color: #007bff;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0,123,255,0.2);
+      transition: box-shadow 0.3s ease;
+    }
+    .dropdown-toggle:hover,
+    .dropdown-toggle:focus {
+      box-shadow: 0 4px 15px rgba(0,123,255,0.4);
+      outline: none;
+    }
+
+    .dropdown-toggle::after {
+      content: '▾';
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #007bff;
+      font-size: 18px;
+      pointer-events: none;
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      width: 100%;
+      background-color: #fff;
+      border: 1px solid #007bff;
+      border-radius: 6px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      margin-top: 5px;
+      display: none;
+      z-index: 10;
+    }
+
+    .dropdown-menu div {
+      padding: 10px 15px;
+      cursor: pointer;
+      color: #007bff;
+      font-weight: 600;
+      border-radius: 6px;
+      transition: background-color 0.2s ease;
+    }
+
+    .dropdown-menu div:hover {
+      background-color: #007bff;
+      color: #fff;
+    }
+
+    .dropdown.open .dropdown-menu {
+      display: block;
+    }
+
+    .controls button {
+      border: none;
+      border-radius: 999px;
+      padding: 12px 20px;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+      color: white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+      flex-grow: 1;
+      max-width: 100%;
+    }
+
+    .controls button:nth-child(2) { background: #007bff; }    /* تحويل إلى فواصل */
+    .controls button:nth-child(3) { background: #28a745; }    /* تحويل إلى أسطر */
+    .controls button:nth-child(4) { background: #ffc107; color: #000; } /* تبديل نوع الفاصل */
+    .controls button:nth-child(5) { background: #17a2b8; }    /* إزالة الفواصل */
+    .controls button:nth-child(6) { background: #6f42c1; }    /* نسخ */
+    .controls button:nth-child(7) { background: #dc3545; }    /* مسح */
+
+    .controls button:hover {
+      opacity: 0.9;
+    }
+
+    label {
+      font-weight: bold;
+      margin-bottom: 10px;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>📋 أداة تنسيق النصوص</h2>
+
+  <label for="input">📝 النص الأصلي</label>
+  <textarea id="input" placeholder="اكتب هنا..."></textarea>
+
+  <div class="controls">
+
+    <div class="dropdown" id="customDropdown">
+      <div tabindex="0" class="dropdown-toggle" id="dropdownToggle" aria-haspopup="listbox" aria-expanded="false">فاصلة</div>
+      <div class="dropdown-menu" role="listbox" aria-labelledby="dropdownToggle">
+        <div role="option" data-value=",">فاصلة</div>
+        <div role="option" data-value="|">عمود</div>
+        <div role="option" data-value="/">شرطة</div>
+        <div role="option" data-value=" ">فراغ</div>
+      </div>
+    </div>
+
+    <button onclick="convertToSeparator()">تحويل إلى فواصل</button>
+    <button onclick="convertToLines()">تحويل إلى أسطر</button>
+    <button onclick="replaceSeparators()">تبديل نوع الفاصل</button>
+    <button onclick="removeAllSeparators()">إزالة الفواصل</button>
+    <button onclick="copyResult()">نسخ النتيجة</button>
+    <button onclick="clearAll()">مسح الكل</button>
+  </div>
+
+  <label for="output">📄 النتيجة </label>
+  <textarea id="output" readonly placeholder="النتيجة ستظهر هنا..."></textarea>
+
+<script>
+  const dropdown = document.getElementById("customDropdown");
+  const toggle = document.getElementById("dropdownToggle");
+  const options = dropdown.querySelectorAll(".dropdown-menu div");
+
+  let selectedValue = ","; // القيمة الافتراضية
+
+  toggle.addEventListener("click", () => {
+    dropdown.classList.toggle("open");
+    const expanded = dropdown.classList.contains("open");
+    toggle.setAttribute("aria-expanded", expanded);
+  });
+
+  options.forEach(option => {
+    option.addEventListener("click", () => {
+      toggle.textContent = option.textContent;
+      selectedValue = option.getAttribute("data-value");
+      dropdown.classList.remove("open");
+      toggle.setAttribute("aria-expanded", false);
+    });
+  });
+
+  // غلق القائمة إذا ضغط المستخدم خارجها
+  document.addEventListener("click", function(e) {
+    if (!dropdown.contains(e.target)) {
+      dropdown.classList.remove("open");
+      toggle.setAttribute("aria-expanded", false);
+    }
+  });
+
+  function getSeparatorValue() {
+    return selectedValue;
+  }
+
+  function convertToSeparator() {
+    const input = document.getElementById("input").value;
+    const separator = getSeparatorValue();
+    const lines = input.split(/\n+/).map(line => line.trim()).filter(line => line !== "");
+    const result = lines.join(separator);
+    document.getElementById("output").value = result;
+    scrollToOutput();
+  }
+
+  function convertToLines() {
+    const input = document.getElementById("input").value;
+    const parts = input.split(/[,\|\/]+/).map(part => part.trim()).filter(part => part !== "");
+    document.getElementById("output").value = parts.join("\n");
+    scrollToOutput();
+  }
+
+  function replaceSeparators() {
+    const input = document.getElementById("input").value;
+    const newSeparator = getSeparatorValue();
+    const replaced = input.replace(/[,\|\/]/g, newSeparator);
+    document.getElementById("output").value = replaced;
+    scrollToOutput();
+  }
+
+  function removeAllSeparators() {
+    const input = document.getElementById("input").value;
+    const lines = input.split(/\n+/).map(line =>
+      line.split(/[,\|\/]/)
+          .filter(w => w.trim() !== "")
+          .join(" ")
+    );
+    document.getElementById("output").value = lines.join("\n");
+    scrollToOutput();
+  }
+
+  function clearAll() {
+    document.getElementById("input").value = "";
+    document.getElementById("output").value = "";
+  }
+
+  function copyResult() {
+    const output = document.getElementById("output");
+    navigator.clipboard.writeText(output.value).then(() => {
+      showAlert("✅ تم نسخ النتيجة");
+    }).catch(() => {
+      showAlert("❌ فشل النسخ");
+    });
+  }
+
+  function showAlert(message) {
+    const existing = document.getElementById("customAlertOverlay");
+    if (existing) existing.remove();
+
+    const overlay = document.createElement("div");
+    overlay.id = "customAlertOverlay";
+    overlay.style.position = "fixed";
+    overlay.style.top = 0;
+    overlay.style.left = 0;
+    overlay.style.width = "100vw";
+    overlay.style.height = "100vh";
+    overlay.style.backgroundColor = "rgba(0,0,0,0.3)";
+    overlay.style.display = "flex";
+    overlay.style.alignItems = "flex-start";
+    overlay.style.justifyContent = "center";
+    overlay.style.paddingTop = "40px";
+    overlay.style.zIndex = 9999;
+
+    const alertBox = document.createElement("div");
+    alertBox.style.backgroundColor = "#fff";
+    alertBox.style.padding = "20px 30px";
+    alertBox.style.borderRadius = "10px";
+    alertBox.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
+    alertBox.style.fontSize = "18px";
+    alertBox.style.color = "#333";
+    alertBox.style.maxWidth = "80%";
+    alertBox.style.textAlign = "center";
+    alertBox.style.opacity = "1";
+    alertBox.style.transition = "opacity 1s ease";
+    alertBox.textContent = message;
+
+    overlay.appendChild(alertBox);
+
+    // إغلاق بالضغط خارج الصندوق
+    overlay.addEventListener("click", () => {
+      overlay.remove();
+    });
+
+    // منع إغلاق عند الضغط داخل الصندوق
+    alertBox.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
+
+    document.body.appendChild(overlay);
+
+    // تبدأ التلاشي بعد ثانيتين
+    setTimeout(() => {
+      alertBox.style.opacity = "0";
+    }, 2000);
+
+    // إزالة العنصر بعد انتهاء التلاشي (3 ثواني)
+    setTimeout(() => {
+      overlay.remove();
+    }, 3000);
+  }
+
+  function scrollToOutput() {
+    document.getElementById("output").scrollIntoView({ behavior: "smooth" });
+  }
+</script>
+
+</body>
+</html>
